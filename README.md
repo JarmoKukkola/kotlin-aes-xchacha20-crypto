@@ -58,7 +58,7 @@ Add the dependency to your project's build.gradle:
 
 ```groovy
 dependencies {
-  compile 'com.github.JarmoKukkola:kotlin-aes-xchacha20-crypto:1.0.0'
+  implementation 'com.github.JarmoKukkola:kotlin-aes-xchacha20-crypto:1.0.0'
 }
 ```
 
