@@ -3,7 +3,7 @@ kotlin-aes-xchacha20-crypto
 
 This AES/XChaCha20 library is very simple and works only on Android.
 
-Kotlin-AES-ChaCha20-Crypto is simple Android class for encrypting &amp; decrypting strings.
+Kotlin-AES-ChaCha20-Crypto is simple Android class for encrypting &amp; decrypting strings or inputstreams.
 
 This library is based on https://github.com/tozny/java-aes-crypto.
 
@@ -24,7 +24,7 @@ This version of the library was modified by Dr. Jarmo Kukkola, aiming to increas
 
 Here are the features of this class. We believe that these properties are consistent with what a lot of people are looking for when encrypting Strings in Android.
 
-* *Works for strings*: It should encrypt arbitrary strings or byte arrays. This means it needs to effectively handle multiple blocks (CBC) and partial blocks (padding). It consistently serializes and deserializes ciphertext, IVs, and key material using base64 to make it easy to store.
+* *Works for strings*: It should encrypt arbitrary strings, byte arrays or inputstreams. This means it needs to effectively handle multiple blocks (CBC) and partial blocks (padding). It consistently serializes and deserializes ciphertext, IVs, and key material using base64 to make it easy to store.
 * *Algorithm & Mode*: Double enryption: XChaCha20 + Poly1305 and then the result is encrypted again with AES 256, GCM, and No padding. Each type encryption of encryption uses their unique key.
 * *IV Handling*: We securely generate a random IV before each encryption and provide a simple class to keep the IV and ciphertext together so they're easy to keep track of and store. We set the IV and then request it back from the Cipher class for compatibility across various Android versions.
 * *Key generation*: Random key generation with the updated generation code recommended for Android. If you want password-based keys, we provide functions to salt and generate them using PBKDF2, Argon2_ID or them combined.
@@ -58,7 +58,7 @@ Add the dependency to your project's build.gradle:
 
 ```groovy
 dependencies {
-  implementation 'com.github.JarmoKukkola:kotlin-aes-xchacha20-crypto:1.0.0'
+  implementation 'com.github.JarmoKukkola:kotlin-aes-xchacha20-crypto:*.*.*' // where *.*.* is the latest library version
 }
 ```
 

@@ -39,6 +39,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
+import java.io.InputStream
 import java.io.OutputStream
 import java.io.UnsupportedEncodingException
 import java.nio.charset.Charset
@@ -61,7 +62,7 @@ import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
 /**
- * Simple library for the ChaCha20/AES key generation, encryption, and decryption.
+ * Simple library for the XChaCha20/AES key generation, encryption, and decryption.
  * This library encrypts plain text first using (256-bit AES, GCM, No padding) and then
  * result is again encrypted with (XChaCha20, Poly1305).
  */
@@ -70,15 +71,16 @@ object XChaCha20AesGCM {
     // If the PRNG fix would not succeed for some reason, we normally will throw an exception.
     // If ALLOW_BROKEN_PRNG is true, however, we will simply log instead.
     private const val ALLOW_BROKEN_PRNG = false
-    const val CIPHER_TRANSFORMATION = "AES/GCM/NoPadding"
+    const val CIPHER_TRANSFORMATION = "AES/CBC/PKCS5Padding"
     private const val CIPHER = "AES"
     private const val AES_KEY_LENGTH_BITS = 256
-    private const val IV_LENGTH_BYTES = 16
+    const val IV_LENGTH_BYTES = 16
     const val PBE_ITERATION_COUNT = 50000
     private val PBE_ALGORITHM = PbeAlgorithm.PBKDF2WithHmacSHA1
     private const val PBE_SALT_LENGTH_BITS = AES_KEY_LENGTH_BITS // same size as key output
     private const val OPS_LIMIT_ARGON2 = 64UL
     private const val MEM_LIMIT_ARGON2 = 16*1024*1024
+    private const val BUFFER_SIZE = 100*1024
 
     //Made BASE_64_FLAGS public as it's useful to know for compatibility.
     const val BASE64_FLAGS = Base64.NO_WRAP
@@ -122,7 +124,7 @@ object XChaCha20AesGCM {
             }
             SecretKeys(
                 SecretKeySpec(confidentialityKeyChaCha20,0,confidentialityKeyChaCha20.size,CIPHER),
-                SecretKeySpec(confidentialityKeyGCM,0,confidentialityKeyChaCha20.size,CIPHER)
+                SecretKeySpec(confidentialityKeyGCM,0,confidentialityKeyGCM.size,CIPHER)
             )
         }
     }
@@ -342,23 +344,14 @@ object XChaCha20AesGCM {
         random.nextBytes(b)
         return b
     }
-    /**
-     * Generates a random IV and encrypts this plain text with the given key. Then attaches
-     * a hashed MAC, which is contained in the CipherTextIvMac class.
-     *
-     * @param plaintext The bytes that will be encrypted
-     * @param secretKeys The AES and HMAC keys with which to encrypt
-     * @return a tuple of the IV, ciphertext, mac
-     * @throws GeneralSecurityException if AES is not implemented on this system
-     * @throws UnsupportedEncodingException if the specified encoding is invalid
-     *//*
+
+    /*
      * -----------------------------------------------------------------
      * Encryption
      * -----------------------------------------------------------------
      */
     /**
-     * Generates a random IV and encrypts this plain text with the given key. Then attaches
-     * a hashed MAC, which is contained in the CipherTextIvMac class.
+     * Generates a random IV and encrypts this plain text with the given key.
      *
      * @param plaintext The text that will be encrypted, which
      * will be serialized with UTF-8
@@ -375,8 +368,7 @@ object XChaCha20AesGCM {
     }
 
     /**
-     * Generates two random IVs and encrypts this plain text with the given key. Then attaches
-     * a hashed MAC, which is contained in the CipherTextIvMac class.
+     * Generates a random IV and encrypts this plain text with the given key.
      *
      * @param plaintext The text that will be encrypted
      * @param secretKeys The combined XChaCha20 and AES-GCM keys with which to encrypt
@@ -409,6 +401,59 @@ object XChaCha20AesGCM {
     }
 
     /**
+     * Generates a random IV and encrypts this plain text with the given key.
+     *
+     * @param inputStream inputstream that is going to be encrypted
+     * @param outputStream outputstream, where the encrypted data is pushed
+     * @param secretKeys The combined XChaCha20 and AES-GCM keys with which to encrypt
+     * @param inputSize size of the input data in bytes
+     * @param listener StreamLister progress listener
+     * @throws GeneralSecurityException if AES is not implemented on this system
+     */
+    @Throws(GeneralSecurityException::class)
+    fun encrypt(inputStream:InputStream,outputStream:OutputStream,secretKeys:SecretKeys,inputSize:Long,listener:StreamListener) {
+        return initializeLibsodium {
+            try {
+                val aesCipherForEncryptionGCM = Cipher.getInstance(CIPHER_TRANSFORMATION)
+                var buffer = ByteArray(BUFFER_SIZE)
+                var bytesCopied:Long = 0
+                val chaCha20Key = secretKeys.confidentialityKeyChaCha20.toString().encodeToUByteArray()
+                var read = inputStream.read(buffer)
+                while(read>=0) {
+                    val secretStreamStateAndHeader = SecretStream.xChaCha20Poly1305InitPush(chaCha20Key)
+                    val byteCipherTextChaCha20 = SecretStream.xChaCha20Poly1305Push(
+                        secretStreamStateAndHeader.state,buffer.run {
+                            if(read==BUFFER_SIZE) {
+                                this
+                            } else {
+                                copyOfRange(0,read)
+                            }
+                        }.toUByteArray(),ubyteArrayOf(),0U
+                    ).toByteArray()
+                    val iv = generateIv()
+                    aesCipherForEncryptionGCM.init(Cipher.ENCRYPT_MODE,secretKeys.confidentialityKeyAes,IvParameterSpec(iv))
+                    val byteCipherTextGCM = aesCipherForEncryptionGCM.doFinal(byteCipherTextChaCha20)
+                    outputStream.apply {
+                        write(iv)
+                        write(secretStreamStateAndHeader.header.toByteArray())
+                        write(byteCipherTextGCM)
+                    }
+                    bytesCopied += read
+                    listener.onProgress(read,bytesCopied,inputSize)
+                    read = inputStream.read(buffer)
+                }
+                listener.onSuccess(bytesCopied.toString())
+            } catch(e:IOException) {
+                listener.onFailure("Cannot write outPutStream",e)
+            } finally {
+                outputStream.flush()
+                outputStream.close()
+                inputStream.close()
+            }
+        }
+    }
+
+    /**
      * Ensures that the PRNG is fixed. Should be used before generating any keys.
      * Will only run once, and every subsequent call should return immediately.
      */
@@ -426,6 +471,7 @@ object XChaCha20AesGCM {
      * Decryption
      * -----------------------------------------------------------------
      */
+
     /**
      * XChaCha20 and AES-GCM decrypt.
      *
@@ -436,16 +482,6 @@ object XChaCha20AesGCM {
      * @throws GeneralSecurityException if AES is not implemented on this system
      * @throws UnsupportedEncodingException if the encoding is unsupported
      */
-    /**
-     * AES CBC+GCM decrypt.
-     *
-     * @param civ The cipher text, IV, and header
-     * @param secretKeys The XChaCha20 and AES keys
-     * @return A string derived from the decrypted bytes, which are interpreted
-     * as a UTF-8 String
-     * @throws GeneralSecurityException if AES is not implemented on this system
-     * @throws UnsupportedEncodingException if UTF-8 is not supported
-     */
     @JvmStatic
     @JvmOverloads
     @Throws(UnsupportedEncodingException::class,GeneralSecurityException::class)
@@ -454,7 +490,7 @@ object XChaCha20AesGCM {
     }
 
     /**
-     * AES CBC+GCM decrypt.
+     * XChaCha20 and AES-GCM decrypt.
      *
      * @param civ the cipher text, AES iv, and ChaCha20 header
      * @param secretKeys the XChaCha20 and AES keys
@@ -478,7 +514,67 @@ object XChaCha20AesGCM {
             ).decryptedData.toByteArray()
         }
         return value!!
-    }/*
+    }
+
+    /**
+     * XChaCha20 and AES-GCM decrypt.
+     *
+     * @param inputStream inputstream that is going to be decrypted
+     * @param outputStream outputstream, where the decrypted data is pushed
+     * @param secretKeys The combined XChaCha20 and AES-GCM keys with which to decrypt
+     * @param inputSize size of the input data in bytes
+     * @param listener StreamLister progress listener
+     * @throws GeneralSecurityException if AES is not implemented on this system
+     */
+    @Throws(GeneralSecurityException::class)
+    fun decrypt(inputStream:InputStream,outputStream:OutputStream,secretKeys:SecretKeys,inputSize:Long,listener:StreamListener) {
+        return initializeLibsodium {
+            try {
+                val header = ByteArray(24)
+                val aesCipherForDecryptionGCM = Cipher.getInstance(CIPHER_TRANSFORMATION)
+                val chaCha2020key = secretKeys.confidentialityKeyChaCha20.toString().encodeToUByteArray()
+
+                val buffer = ByteArray(BUFFER_SIZE+24)
+                var bytesCopied = 0L
+                val iv = ByteArray(IV_LENGTH_BYTES)
+                inputStream.read(iv)
+                inputStream.read(header)
+                var read = inputStream.read(buffer)
+                while(read>=0) {
+                    val value = if(read==buffer.size) {
+                        buffer
+                    } else {
+                        buffer.copyOf(read)
+                    }
+                    aesCipherForDecryptionGCM.init(
+                        Cipher.DECRYPT_MODE,secretKeys.confidentialityKeyAes,IvParameterSpec(iv)
+                    )
+                    val cipherTextGCM = aesCipherForDecryptionGCM.doFinal(value)
+                    val secretStreamStateAndHeader = SecretStream.xChaCha20Poly1305InitPull(chaCha2020key,header.toUByteArray())
+                    val block = SecretStream.xChaCha20Poly1305Pull(
+                        secretStreamStateAndHeader.state,cipherTextGCM.toUByteArray(),ubyteArrayOf()
+                    ).decryptedData.toByteArray()
+
+                    outputStream.write(block)
+                    bytesCopied += read
+                    listener.onProgress(read,bytesCopied,inputSize)
+                    inputStream.read(iv)
+                    inputStream.read(header)
+                    listener.onProgress(read,bytesCopied,inputSize)
+                    read = inputStream.read(buffer)
+                }
+                listener.onSuccess(bytesCopied.toString())
+            } catch(e:IOException) {
+                listener.onFailure("Cannot write outPutStream",e)
+            } finally {
+                outputStream.flush()
+                outputStream.close()
+                inputStream.close()
+            }
+        }
+    }
+
+    /*
      * -----------------------------------------------------------------
      * Helper Code
      * -----------------------------------------------------------------

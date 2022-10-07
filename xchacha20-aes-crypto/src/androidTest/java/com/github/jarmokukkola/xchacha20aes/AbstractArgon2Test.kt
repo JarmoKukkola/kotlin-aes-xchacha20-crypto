@@ -60,6 +60,7 @@ abstract class AbstractArgon2Test:AbstractKeyTest() {
     fun keyGenerationTime_crypto_pwhash_OPSLIMIT_MODERATE() {
         generatePassword(crypto_pwhash_OPSLIMIT_MODERATE)
     }
+
     @Test
     fun keyGenerationTime_crypto_pwhash_OPSLIMIT_INTERACTIVE() {
         generatePassword(crypto_pwhash_OPSLIMIT_INTERACTIVE.toULong())
