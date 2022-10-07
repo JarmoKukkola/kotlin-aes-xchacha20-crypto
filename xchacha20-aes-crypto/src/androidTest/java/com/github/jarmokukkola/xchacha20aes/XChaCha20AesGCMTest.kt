@@ -1,18 +1,17 @@
 package com.github.jarmokukkola.xchacha20aes
 
-import com.ionspin.kotlin.crypto.LibsodiumInitializer
-import com.ionspin.kotlin.crypto.secretstream.SecretStream
-import com.ionspin.kotlin.crypto.util.encodeToUByteArray
 import com.github.jarmokukkola.xchacha20aes.XChaCha20AesGCM.decryptString
 import com.github.jarmokukkola.xchacha20aes.XChaCha20AesGCM.encrypt
 import com.github.jarmokukkola.xchacha20aes.XChaCha20AesGCM.generateKey
 import com.github.jarmokukkola.xchacha20aes.XChaCha20AesGCM.generateKeyFromPasswordArgon2
-import com.github.jarmokukkola.xchacha20aes.XChaCha20AesGCM.generateKeyFromPassword
 import com.github.jarmokukkola.xchacha20aes.XChaCha20AesGCM.generateKeyFromPasswordPBKDF2
 import com.github.jarmokukkola.xchacha20aes.XChaCha20AesGCM.generateSalt
 import com.github.jarmokukkola.xchacha20aes.XChaCha20AesGCM.keyString
 import com.github.jarmokukkola.xchacha20aes.XChaCha20AesGCM.keys
 import com.github.jarmokukkola.xchacha20aes.XChaCha20AesGCM.saltString
+import com.ionspin.kotlin.crypto.LibsodiumInitializer
+import com.ionspin.kotlin.crypto.secretstream.SecretStream
+import com.ionspin.kotlin.crypto.util.encodeToUByteArray
 import junit.framework.TestCase
 import org.junit.Test
 import javax.crypto.Cipher
@@ -26,8 +25,8 @@ class XChaCha20AesGCMTest {
 
         val testString = "some test"
 
-        val cipherTextIvHeader = encrypt(testString,keys) //store or send to server //store or send to server
-        val ciphertextString = cipherTextIvHeader.toString()
+        val cipherTextIvHeader = encrypt(testString,keys)
+        val ciphertextString = cipherTextIvHeader.toString()  //store or send to server //store or send to server
 
         //decrypt
         val plainText = decryptString(cipherTextIvHeader,keys)
@@ -117,10 +116,5 @@ class XChaCha20AesGCMTest {
 
             TestCase.assertEquals(value,decrypted)
         }
-    }
-
-    @Test
-    fun generateKeyArgon2PBKDF2(){
-        generateKeyFromPassword("password",generateSalt())
     }
 }
