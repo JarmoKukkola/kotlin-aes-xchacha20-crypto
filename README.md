@@ -1,9 +1,7 @@
 kotlin-aes-xchacha20-crypto
 ===============
 
-This AES/XChaCha20 library is very simple and works only on Android.
-
-Kotlin-AES-ChaCha20-Crypto is simple Android class for encrypting &amp; decrypting strings or inputstreams.
+This AES/XChaCha20 library is very simple and works only on Android. It is used for encrypting &amp; decrypting strings, byte arrays or inputstreams.
 
 This library is based on https://github.com/tozny/java-aes-crypto.
 
