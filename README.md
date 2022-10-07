@@ -17,7 +17,7 @@ This version of the library was modified by Dr. Jarmo Kukkola, aiming to increas
 * Instead of AES-128-CBC encryption, implemented double encryption, once with AES-256-GCM and another time with XChaCha20. Each are using unique key. The purpose is to reduce probability of successful attacks.
 * Increased minimum android API version to 21.
 * Added more robust tests, including measurements of key derivation time with PBKDF2 and Argon2.
-* Added InputStream encryption/decryption to OutputStream. It is meant for handling objects that are too big to be at once in memory.
+* Added InputStream encryption/decryption to OutputStream. It is meant for handling objects that are too big to be at once in memory. For example, encrypting files or transferring large data to/from internet without saving encrypted file to local storage first.
 
 # Features
 
