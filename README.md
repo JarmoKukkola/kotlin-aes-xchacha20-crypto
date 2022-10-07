@@ -13,7 +13,7 @@ This version of the library was modified by Dr. Jarmo Kukkola, aiming to increas
 * Made it possible to change PBKDF2 iteration count and algorithm type. Algorithm types can be seen in https://developer.android.com/guide/topics/security/cryptography under SecretKeyFactory - PBKDF2...
 * Added dependency https://github.com/ionspin/kotlin-multiplatform-libsodium (Apache 2.0), which depends on https://github.com/jedisct1/libsodium (ISC License).
 * Added option to generate key from password using Argon2.
-* Increased default PBKDF2 iteration count from 10000 to 100000.
+* Increased default PBKDF2 iteration count from 10 000 to 50 000.
 * Instead of AES-128-CBC encryption, implemented double encryption, once with AES-256-GCM and another time with XChaCha20. Each are using unique key. The purpose is to reduce probability of successful attacks.
 * Increased minimum android API version to 21.
 * Added more robust tests, including measurements of key derivation time with PBKDF2 and Argon2.
