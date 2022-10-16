@@ -408,14 +408,16 @@ object XChaCha20AesGCM {
      * @param secretKeys The combined XChaCha20 and AES-GCM keys with which to encrypt
      * @param inputSize size of the input data in bytes
      * @param listener StreamLister progress listener
+     * @param bufferSize Size of the buffer. NOTE: has to be the same when encrypting/decrypting.
      * @throws GeneralSecurityException if AES is not implemented on this system
      */
     @Throws(GeneralSecurityException::class)
-    fun encrypt(inputStream:InputStream,outputStream:OutputStream,secretKeys:SecretKeys,inputSize:Long,listener:StreamListener) {
+    fun encrypt(inputStream:InputStream,outputStream:OutputStream,secretKeys:SecretKeys,inputSize:Long,
+                listener:StreamListener,bufferSize:Int = BUFFER_SIZE) {
         return initializeLibsodium {
             try {
                 val aesCipherForEncryptionGCM = Cipher.getInstance(CIPHER_TRANSFORMATION)
-                var buffer = ByteArray(BUFFER_SIZE)
+                var buffer = ByteArray(bufferSize)
                 var bytesCopied:Long = 0
                 val chaCha20Key = secretKeys.confidentialityKeyChaCha20.toString().encodeToUByteArray()
                 var read = inputStream.read(buffer)
@@ -524,17 +526,18 @@ object XChaCha20AesGCM {
      * @param secretKeys The combined XChaCha20 and AES-GCM keys with which to decrypt
      * @param inputSize size of the input data in bytes
      * @param listener StreamLister progress listener
+     * @param bufferSize Size of the buffer. NOTE: has to be the same when encrypting/decrypting.
      * @throws GeneralSecurityException if AES is not implemented on this system
      */
     @Throws(GeneralSecurityException::class)
-    fun decrypt(inputStream:InputStream,outputStream:OutputStream,secretKeys:SecretKeys,inputSize:Long,listener:StreamListener) {
+    fun decrypt(inputStream:InputStream,outputStream:OutputStream,secretKeys:SecretKeys,inputSize:Long,listener:StreamListener,bufferSize:Int = BUFFER_SIZE) {
         return initializeLibsodium {
             try {
                 val header = ByteArray(24)
                 val aesCipherForDecryptionGCM = Cipher.getInstance(CIPHER_TRANSFORMATION)
                 val chaCha2020key = secretKeys.confidentialityKeyChaCha20.toString().encodeToUByteArray()
 
-                val buffer = ByteArray(BUFFER_SIZE+24)
+                val buffer = ByteArray(bufferSize+24)
                 var bytesCopied = 0L
                 val iv = ByteArray(IV_LENGTH_BYTES)
                 inputStream.read(iv)

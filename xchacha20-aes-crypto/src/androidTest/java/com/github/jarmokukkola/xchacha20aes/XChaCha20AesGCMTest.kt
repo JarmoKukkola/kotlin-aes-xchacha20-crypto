@@ -243,15 +243,16 @@ class XChaCha20AesGCMTest {
         val keys = generateKey()
         val text = Random.nextBytes(20010).toString(Charsets.UTF_8)
         val size = text.length.toLong()
+        val bufferSize =100 * 1024
         var inputStream = text.byteInputStream(Charsets.UTF_8)
         val outputStream = getOutPutStream()
-        encrypt(inputStream,outputStream,keys,size,getStreamListener())
+        encrypt(inputStream,outputStream,keys,size,getStreamListener(),bufferSize)
         val encrypted = outputStream.toByteArray()
 
         inputStream = encrypted.inputStream()
         outputStream.clear()
 
-        decrypt(inputStream,outputStream,keys,size,getStreamListener())
+        decrypt(inputStream,outputStream,keys,size,getStreamListener(),bufferSize)
 
         val decrypted = outputStream.toByteArray().toString(Charsets.UTF_8)
         TestCase.assertEquals(decrypted,text)
