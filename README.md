@@ -1,9 +1,7 @@
 kotlin-aes-xchacha20-crypto
 ===============
 
-This AES/XChaCha20 library is very simple and works only on Android.
-
-Kotlin-AES-ChaCha20-Crypto is simple Android class for encrypting &amp; decrypting strings or inputstreams.
+This AES/XChaCha20 library is very simple and works only on Android. It is used for encrypting &amp; decrypting strings, byte arrays or inputstreams.
 
 This library is based on https://github.com/tozny/java-aes-crypto.
 
@@ -15,10 +13,11 @@ This version of the library was modified by Dr. Jarmo Kukkola, aiming to increas
 * Made it possible to change PBKDF2 iteration count and algorithm type. Algorithm types can be seen in https://developer.android.com/guide/topics/security/cryptography under SecretKeyFactory - PBKDF2...
 * Added dependency https://github.com/ionspin/kotlin-multiplatform-libsodium (Apache 2.0), which depends on https://github.com/jedisct1/libsodium (ISC License).
 * Added option to generate key from password using Argon2.
-* Increased default PBKDF2 iteration count from 10000 to 100000.
+* Increased default PBKDF2 iteration count from 10 000 to 50 000.
 * Instead of AES-128-CBC encryption, implemented double encryption, once with AES-256-GCM and another time with XChaCha20. Each are using unique key. The purpose is to reduce probability of successful attacks.
 * Increased minimum android API version to 21.
 * Added more robust tests, including measurements of key derivation time with PBKDF2 and Argon2.
+* Added InputStream encryption/decryption to OutputStream. It is meant for handling objects that are too big to be at once in memory. For example, encrypting files or transferring large data to/from internet without saving encrypted file to local storage first.
 
 # Features
 
@@ -28,7 +27,7 @@ Here are the features of this class. We believe that these properties are consis
 * *Algorithm & Mode*: Double enryption: XChaCha20 + Poly1305 and then the result is encrypted again with AES 256, GCM, and No padding. Each type encryption of encryption uses their unique key.
 * *IV Handling*: We securely generate a random IV before each encryption and provide a simple class to keep the IV and ciphertext together so they're easy to keep track of and store. We set the IV and then request it back from the Cipher class for compatibility across various Android versions.
 * *Key generation*: Random key generation with the updated generation code recommended for Android. If you want password-based keys, we provide functions to salt and generate them using PBKDF2, Argon2_ID or them combined.
-* *Older Phones*: It's designed for backward compatibility with older phones, including ciphers that are available for most versions of Android as well as entropy fixes for old Android bugs.
+* *Older Phones*: It's mostly designed for backward compatibility with older phones, including ciphers that are available for most versions of Android as well as entropy fixes for old Android bugs. However, currently minimum version is 21. There is potential to make it more backwards compatible.
 
 
 # How to include in project?
@@ -92,8 +91,8 @@ dependencies {
 ## Decrypt
 
 ```java
-  //Use the constructor to re-create the CipherTextIvMac class from the string:
-  CipherTextIvHeader cipherTextIvHeader = new CipherTextIvHeader (cipherTextString);
+  //Use the constructor to re-create the cipherTextIvHeader class from the string:
+  CipherTextIvHeader cipherTextIvHeader = new CipherTextIvHeader(cipherTextString);
   String plainText = XChaCha20AesGCM.decryptString(cipherTextIvHeader, keys);
 ```
 
