@@ -213,17 +213,17 @@ object XChaCha20AesGCM {
         }
 
         // Split the random bytes into two parts:
-        val confidentialityKeyBytes = copyOfRange(keyBytes,0,AES_KEY_LENGTH_BITS/8)
+        val confidentialityKeyBytesXChaCha20 = copyOfRange(keyBytes,0,AES_KEY_LENGTH_BITS/8)
         val confidentialityKeyBytesGCM = copyOfRange(
-            keyBytes,AES_KEY_LENGTH_BITS/88,2*AES_KEY_LENGTH_BITS/8
+            keyBytes,AES_KEY_LENGTH_BITS/8,2*AES_KEY_LENGTH_BITS/8
         )
 
         //Generate the XChaCha20 key
-        val confidentialityKeyChaCha20:SecretKey = SecretKeySpec(confidentialityKeyBytes,CIPHER)
+        val confidentialityKeyXChaCha20:SecretKey = SecretKeySpec(confidentialityKeyBytesXChaCha20,CIPHER)
 
         //Generate the AES-GCM key
         val confidentialityKeyGCM:SecretKey = SecretKeySpec(confidentialityKeyBytesGCM,CIPHER)
-        return SecretKeys(confidentialityKeyChaCha20,confidentialityKeyGCM)
+        return SecretKeys(confidentialityKeyXChaCha20,confidentialityKeyGCM)
     }
 
     /**
@@ -277,13 +277,13 @@ object XChaCha20AesGCM {
         val keyBytes = keyFactory.generateSecret(keySpec).encoded
 
         // Split the random bytes into two parts:
-        val confidentialityKeyBytes = copyOfRange(keyBytes,0,AES_KEY_LENGTH_BITS/8)
+        val confidentialityKeyBytesXChaCha20 = copyOfRange(keyBytes,0,AES_KEY_LENGTH_BITS/8)
         val confidentialityKeyBytesGCM = copyOfRange(
-            keyBytes,AES_KEY_LENGTH_BITS/88,2*AES_KEY_LENGTH_BITS/8
+            keyBytes,AES_KEY_LENGTH_BITS/8,2*AES_KEY_LENGTH_BITS/8
         )
 
         //Generate the XChaCha20 key
-        val confidentialityKeyChaCha20:SecretKey = SecretKeySpec(confidentialityKeyBytes,CIPHER)
+        val confidentialityKeyChaCha20:SecretKey = SecretKeySpec(confidentialityKeyBytesXChaCha20,CIPHER)
 
         //Generate the AES-GCM key
         val confidentialityKeyGCM:SecretKey = SecretKeySpec(confidentialityKeyBytesGCM,CIPHER)
@@ -640,7 +640,7 @@ object XChaCha20AesGCM {
             if(javaClass!=obj.javaClass) return false
             val other = obj as SecretKeys
             if(confidentialityKeyAes!=other.confidentialityKeyAes) return false
-            if(confidentialityKeyChaCha20!=other.confidentialityKeyChaCha20) false
+            if(confidentialityKeyChaCha20!=other.confidentialityKeyChaCha20) return false
             return true
         }
     }

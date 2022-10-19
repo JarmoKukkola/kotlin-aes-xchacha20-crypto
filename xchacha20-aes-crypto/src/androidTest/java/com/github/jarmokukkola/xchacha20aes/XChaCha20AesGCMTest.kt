@@ -104,6 +104,29 @@ class XChaCha20AesGCMTest {
         TestCase.assertEquals(keys,restoredKeys)
     }
 
+    @Test
+    fun stringifyKeysEcryptDecrypt() {
+        val keys = generateKey()
+        val keysText = keyString(keys)
+        val restoredKeys = keys(keysText)
+        val value = "some text"
+        val encrypted = encrypt(value, keys)
+        val decrypted = decrypt(encrypted, restoredKeys)
+        TestCase.assertEquals(value,decrypted.toString(Charsets.UTF_8))
+    }
+
+    @Test
+    fun passwordKeysEncryptDecrypt() {
+        val password = "password123"
+        val salt = generateSalt()
+        val keys = generateKeyFromPassword(password, salt)
+        val keysAgain = generateKeyFromPassword(password, salt)
+        val value = "some text"
+        val encrypted = encrypt(value, keys)
+        val decrypted = decrypt(encrypted, keysAgain)
+        TestCase.assertEquals(value,decrypted.toString(Charsets.UTF_8))
+    }
+
     @OptIn(ExperimentalUnsignedTypes::class)
     @Test
     fun chaCha20() {
